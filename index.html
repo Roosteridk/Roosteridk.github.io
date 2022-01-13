@@ -5,7 +5,7 @@
 <script>
 
 // Initialize 2D array
-let size = 40, grid = [];
+let size = 200, grid = [];
 for (let i = 0; i < size; i++) {
     grid[i] = new Array(size).fill('W')
 }
@@ -14,7 +14,7 @@ for (let i = 0; i < size; i++) {
 generateMaze(20, 0);
 console.log(grid);
 
-function randomIndex(length) {
+function random(length) {
     return Math.floor(Math.random() * length)
 }
 
@@ -33,9 +33,10 @@ function generateMaze(i, j) {
     grid[i][j] = '.';
     let frontier, fi, fj, fIndex;
     let frontiers = computeFrontier(i, j);
+    let end = false;
     while (frontiers.length > 0) {
         // Select random frontier
-        fIndex = randomIndex(frontiers.length); frontier = frontiers[fIndex]; fi = frontier[0]; fj = frontier[1];
+        fIndex = random(frontiers.length); frontier = frontiers[fIndex]; fi = frontier[0]; fj = frontier[1];
 
         // Search for available neighbors and confirm path
         if (frontier[2] == 'north' && grid[fi-1][fj] == 'W' && grid[fi][fj+1] == 'W' && grid[fi][fj-1] == 'W') {  
@@ -56,7 +57,12 @@ function generateMaze(i, j) {
             frontiers = frontiers.concat(computeFrontier(fi, fj));
         }
         // remove frontier from list
-        frontiers.splice(fIndex, 1); 
+        frontiers.splice(fIndex, 1);
+        // Designate end cell
+        if (!end && fj == size-2) { 
+            grid[fi][size-1] = '.';
+            end = true;
+        }
     }
     draw(800, i, j);
 }
@@ -72,9 +78,7 @@ function draw(s, si, sj) {
     // Draw grid
     for (let i = 0; i < size; i++) {
         for (let j = 0; j < size; j++) {
-            if (grid[i][j] == 'W') {
-                ctx.fillRect(j*delta, i*delta, delta, delta)
-            } 
+            if (grid[i][j] == 'W') ctx.fillRect(j*delta, i*delta, delta, delta)
         }
     }
 
