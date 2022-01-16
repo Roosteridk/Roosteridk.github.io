@@ -1,111 +1,148 @@
-<div style="position: relative;">
-    <canvas id="grid" width="800" height="800" style="position: absolute; left: 0; top: 0; z-index: 0;"></canvas>
+<canvas id="grid"></canvas>
+<div>
+  <button onclick="run()">Generate</button>
+  <input id="sizeRange" type="number" min="5" max="200" value="20">
 </div>
 
 <script>
+  var s = 800;
+  var size, delta, grid, start, end, loc;
 
-// Initialize 2D array
-let size = 200, grid = [];
-for (let i = 0; i < size; i++) {
-    grid[i] = new Array(size).fill('W')
-}
+  // Create canvas
+  var canvas = document.getElementById("grid");
+  var ctx = canvas.getContext("2d");
+  canvas.width = s; canvas.height = s;
 
+  function run() {
+    size = Number(document.getElementById("sizeRange").value);
+    delta = s / size;
+    document.removeEventListener("keydown", move);
+    start = random(1, size - 2);
+    end = undefined;
+    loc = [start, 0];
+    // Prepare 2d array
+    grid = [];
+    for (let i = 0; i < size; i++) {
+      grid[i] = new Array(size).fill("W");
+    }
+    // Reset canvas
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-generateMaze(20, 0);
-console.log(grid);
+    generateMaze();
+    console.log(grid);
+  }
 
-function random(length) {
-    return Math.floor(Math.random() * length)
-}
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
 
-function computeFrontier(i, j) {
+  function random(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1) + min); //The maximum is inclusive and the minimum is inclusive
+  }
+
+  function computeFrontier(i, j) {
     let frontiers = [];
     // check for walls and filter out edges
-    if (i-1 > 0 && grid[i-1][j] == 'W') frontiers.push([i-1, j, 'north'])
-    if (i+1 < size-1 && grid[i+1][j] == 'W') frontiers.push([i+1, j, 'south'])
-    if (j+1 < size-1 && grid[i][j+1] == 'W') frontiers.push([i, j+1, 'east'])
-    if (j-1 > 0 && grid[i][j-1] == 'W') frontiers.push([i, j-1, 'west'])
+    if (i - 1 > 0 && grid[i - 1][j] == "W") frontiers.push([i - 1, j, "north"]);
+    if (i + 1 < size - 1 && grid[i + 1][j] == "W") frontiers.push([i + 1, j, "south"]);
+    if (j + 1 < size - 1 && grid[i][j + 1] == "W") frontiers.push([i, j + 1, "east"]);
+    if (j - 1 > 0 && grid[i][j - 1] == "W") frontiers.push([i, j - 1, "west"]);
 
     return frontiers;
-}
+  }
 
-function generateMaze(i, j) {
-    grid[i][j] = '.';
+  async function generateMaze() {
+    ctx.fillStyle = "white";
+    grid[start][0] = ".";
     let frontier, fi, fj, fIndex;
-    let frontiers = computeFrontier(i, j);
-    let end = false;
+    let frontiers = computeFrontier(start, 0);
     while (frontiers.length > 0) {
-        // Select random frontier
-        fIndex = random(frontiers.length); frontier = frontiers[fIndex]; fi = frontier[0]; fj = frontier[1];
+      // Select random frontier
+      fIndex = random(0, frontiers.length - 1);
+      frontier = frontiers[fIndex];
+      fi = frontier[0];
+      fj = frontier[1];
 
-        // Search for available neighbors and confirm path
-        if (frontier[2] == 'north' && grid[fi-1][fj] == 'W' && grid[fi][fj+1] == 'W' && grid[fi][fj-1] == 'W') {  
-            grid[fi][fj] = '.';
-            // Add new frontiers
-            frontiers = frontiers.concat(computeFrontier(fi, fj));
-        } 
-        else if (frontier[2] == 'south' && grid[fi+1][fj] == 'W' && grid[fi][fj+1] == 'W' && grid[fi][fj-1] == 'W') {
-            grid[fi][fj] = '.';
-            frontiers = frontiers.concat(computeFrontier(fi, fj));
-        }
-        else if (frontier[2] == 'east' && grid[fi+1][fj] == 'W' && grid[fi-1][fj] == 'W' && grid[fi][fj+1] == 'W') {
-            grid[fi][fj] = '.';
-            frontiers = frontiers.concat(computeFrontier(fi, fj));
-        }
-        else if (frontier[2] == 'west' && grid[fi+1][fj] == 'W' && grid[fi-1][fj] == 'W' && grid[fi][fj-1] == 'W') {
-            grid[fi][fj] = '.';
-            frontiers = frontiers.concat(computeFrontier(fi, fj));
-        }
-        // remove frontier from list
-        frontiers.splice(fIndex, 1);
-        // Designate end cell
-        if (!end && fj == size-2) { 
-            grid[fi][size-1] = '.';
-            end = true;
-        }
+      // Search for available neighbors and confirm path
+      if (frontier[2] == "north" && grid[fi - 1][fj] == "W" && grid[fi][fj + 1] == "W" && grid[fi][fj - 1] == "W") {
+        grid[fi][fj] = ".";
+        // Draw square
+        ctx.fillRect(fj * delta, fi * delta, delta, delta);
+        // Add new frontiers
+        frontiers = frontiers.concat(computeFrontier(fi, fj));
+      } else if (frontier[2] == "south" && grid[fi + 1][fj] == "W" && grid[fi][fj + 1] == "W" && grid[fi][fj - 1] == "W") {
+        grid[fi][fj] = ".";
+        ctx.fillRect(fj * delta, fi * delta, delta, delta);
+        frontiers = frontiers.concat(computeFrontier(fi, fj));
+      } else if (frontier[2] == "east" && grid[fi + 1][fj] == "W" && grid[fi - 1][fj] == "W" && grid[fi][fj + 1] == "W") {
+        grid[fi][fj] = ".";
+        ctx.fillRect(fj * delta, fi * delta, delta, delta);
+        frontiers = frontiers.concat(computeFrontier(fi, fj));
+      } else if (frontier[2] == "west" && grid[fi + 1][fj] == "W" && grid[fi - 1][fj] == "W" && grid[fi][fj - 1] == "W") {
+        grid[fi][fj] = ".";
+        ctx.fillRect(fj * delta, fi * delta, delta, delta);
+        frontiers = frontiers.concat(computeFrontier(fi, fj));
+      }
+      // remove frontier from list
+      frontiers.splice(fIndex, 1);
+      await sleep(1);
     }
-    draw(800, i, j);
-}
-
-function draw(s, si, sj) {
-    var canvas = document.getElementById('grid');
-    var ctx = canvas.getContext('2d');
-    ctx.canvas.width = s; 
-    ctx.canvas.height = s;
-    let delta = s/size;
-    let loc = [si, sj];
-
-    // Draw grid
-    for (let i = 0; i < size; i++) {
-        for (let j = 0; j < size; j++) {
-            if (grid[i][j] == 'W') ctx.fillRect(j*delta, i*delta, delta, delta)
-        }
+    // Designate end cell
+    for (let r = random(1, size - 2); end == undefined; r = random(1, size - 2)) {
+      if (grid[r][size - 2] == ".") {
+        end = r;
+        grid[r][size - 1] = '.'
+        ctx.fillRect((size - 1) * delta, r * delta, delta, delta);
+      }
     }
-
-    // Start
-    ctx.fillStyle = 'red';
-    ctx.fillRect(loc[1]*delta, loc[0]*delta, delta, delta);
 
     // Interact
-    document.addEventListener('keydown', e => {
-        if (e.code == 'ArrowUp' && grid[loc[0]-1][loc[1]] == '.') {
-            ctx.clearRect(loc[1]*delta, loc[0]*delta, delta, delta);
-            loc[0]--
-            ctx.fillRect(loc[1]*delta, loc[0]*delta, delta, delta);
-        } else if (e.code == 'ArrowDown' && grid[loc[0]+1][loc[1]] == '.') {
-            ctx.clearRect(loc[1]*delta, loc[0]*delta, delta, delta);
-            loc[0]++
-            ctx.fillRect(loc[1]*delta, loc[0]*delta, delta, delta);
-        } else if (e.code == 'ArrowRight' && grid[loc[0]][loc[1]+1] == '.') {
-            ctx.clearRect(loc[1]*delta, loc[0]*delta, delta, delta);
-            loc[1]++
-            ctx.fillRect(loc[1]*delta, loc[0]*delta, delta, delta);
-        } else if (e.code == 'ArrowLeft' && grid[loc[0]][loc[1]-1] == '.') {
-            ctx.clearRect(loc[1]*delta, loc[0]*delta, delta, delta);
-            loc[1]--
-            ctx.fillRect(loc[1]*delta, loc[0]*delta, delta, delta);
-        }
-    });
+    ctx.fillStyle = "red";
+    ctx.fillRect(0 * delta, start * delta, delta, delta);
+    document.addEventListener("keydown", move);
+  }
+
+  function move(e) {
+    let key = e.code;
+    if (key == "ArrowUp" && grid[loc[0] - 1][loc[1]] == ".") {
+      ctx.clearRect(loc[1] * delta, loc[0] * delta, delta, delta);
+      loc[0]--;
+      ctx.fillRect(loc[1] * delta, loc[0] * delta, delta, delta);
+    } else if (key == "ArrowDown" && grid[loc[0] + 1][loc[1]] == ".") {
+      ctx.clearRect(loc[1] * delta, loc[0] * delta, delta, delta);
+      loc[0]++;
+      ctx.fillRect(loc[1] * delta, loc[0] * delta, delta, delta);
+    } else if (key == "ArrowRight" && grid[loc[0]][loc[1] + 1] == ".") {
+      ctx.clearRect(loc[1] * delta, loc[0] * delta, delta, delta);
+      loc[1]++;
+      ctx.fillRect(loc[1] * delta, loc[0] * delta, delta, delta);
+    } else if (key == "ArrowLeft" && grid[loc[0]][loc[1] - 1] == ".") {
+      ctx.clearRect(loc[1] * delta, loc[0] * delta, delta, delta);
+      loc[1]--;
+      ctx.fillRect(loc[1] * delta, loc[0] * delta, delta, delta);
+    }
+  }
+  /*
+function draw(s) {
+ctx.canvas.width = s;
+ctx.canvas.height = s;
+let delta = s / size;
+let loc = [start[0], start[1]];
+
+// Draw grid
+for (let i = 0; i < size; i++) {
+  for (let j = 0; j < size; j++) {
+    if (grid[i][j] == "W") ctx.fillRect(j * delta, i * delta, delta, delta);
+  }
 }
+
+// Start
+ctx.fillStyle = "red";
+ctx.fillRect(loc[1] * delta, loc[0] * delta, delta, delta);
+}
+*/
 
 </script>
